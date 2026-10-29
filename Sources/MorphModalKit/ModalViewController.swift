@@ -242,6 +242,10 @@ public final class ModalViewController: UIViewController {
         } completion:{
             self.containerStack.removeLast()
             removing.wrapper.removeFromSuperview()
+            // Anything that re-stacked during the animation (a keyboard
+            // change, say) may have left the new front card in a peek pose.
+            self.layoutAll()
+            self.applyPeekTransforms(animated: false)
             removing.modalView.modalDidDisappear(beingReplaced: false)
             next.modalView.modalDidAppear(fromReplace: false)
             self.interaction.setGestureEnabled(next.modalView.isDraggable)
@@ -652,7 +656,12 @@ public final class ModalViewController: UIViewController {
         let options  = UIView.AnimationOptions(rawValue: curveRaw << 16)
         UIView.animate(withDuration: duration, delay: 0, options: options) {
             self.layoutAll()
-            self.applyPeekTransforms(animated: true)
+            // Mid-pop the leaving card is still last in the stack, so stacking
+            // now would push the card underneath back into the peek position.
+            // The pop re-stacks once it finishes.
+            if !self.isTransitioning {
+                self.applyPeekTransforms(animated: true)
+            }
         }
     }
 
